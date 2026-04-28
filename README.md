@@ -2,8 +2,6 @@
   <img src="assets/logo.png" alt="localScenic 850T" width="600"/>
 </p>
 
-<h1 align="center">localScenic</h1>
-
 <p align="center">
   <b>Real-time local control for Proscenic robot vacuums. No cloud. No latency.</b>
 </p>
