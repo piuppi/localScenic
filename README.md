@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <b>Real-time local control for Proscenic robot vacuums. No cloud. No latency.</b>
+  <b>Real-time local control for Proscenic Robot Vacuums. No cloud. No latency.</b>
 </p>
 
 <p align="center">
-  Reverse engineered a Proscenic 850T robot vacuum to remove cloud dependency and fix a broken remote.
+  Reverse engineered a Proscenic 850T robot vacuum to bypass cloud dependency and fix a broken remote.
 </p>
 
 <p align="center">
