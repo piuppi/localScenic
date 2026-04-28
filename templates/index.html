@@ -204,10 +204,10 @@
   <!-- MODALITÀ PULIZIA -->
   <div class="card">
     <div class="card-title">Cleaning mode</div>
-    <div class="btn-group">
-      <button class="btn" onclick="setMode('smart')">Auto</button>
-      <button class="btn" onclick="setMode('wallfollow')">Edge</button>
-      <button class="btn" onclick="setMode('sprial')">Spot</button>
+    <div class="btn-group" id="btn-group">
+      <button class="btn" data-mode="smart" onclick="setMode('smart')">Auto</button>
+      <button class="btn" data-mode="wallfollow" onclick="setMode('wallfollow')">Edge</button>
+      <button class="btn" data-mode="sprial" onclick="setMode('sprial')">Spot</button>
       <div class="tooltip-wrap show-tooltip" id="mop-tooltip-wrap">
         <button class="btn" id="btn-mop" onclick="setMode('mop')" disabled>Mop</button>
         <span class="tooltip">&#9888; Insert the water tank</span>
@@ -345,7 +345,7 @@ document.querySelectorAll('.dpad-btn').forEach(btn => {
 // --- Bottone START/STOP centrale ---
 document.getElementById('btn-startstop').addEventListener('click', () => {
   const badge = document.getElementById('status-badge').textContent;
-  const active = ['cleaning','mopping','edge','spot','depth'];
+  const active = ['cleaning','mopping','edge','sprial','depth'];
   if (active.includes(badge)) {
     fetch('/pause');
   } else {
@@ -376,7 +376,11 @@ document.addEventListener('keyup', (e) => {
 });
 
 // --- Comandi ---
-function setMode(mode) { fetch(`/mode/${mode}`); }
+function setMode(mode) {
+  fetch(`/mode/${mode}`); 
+  document.querySelectorAll('#btn-group .btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#btn-group .btn[data-mode="${mode}"]`)?.classList.add('active');
+  }
 function pause() { fetch('/pause'); }
 
 function setFan(level) {
@@ -464,7 +468,7 @@ function updateStatus() {
 	  
       // Bottone START/STOP
       const ssBtn = document.getElementById('btn-startstop');
-      const isActive = ['cleaning','mopping','edge','spot','depth'].includes(statusText);
+      const isActive = ['cleaning','mopping','edge','sprial','depth'].includes(statusText);
       ssBtn.textContent = isActive ? 'STOP' : 'START';
       ssBtn.classList.toggle('stop-mode', isActive);
 
@@ -502,6 +506,11 @@ function updateStatus() {
       // Ventola attiva (DP 27)
       document.querySelectorAll('#fan-group .btn').forEach(b => {
         b.classList.toggle('active', b.dataset.fan === d.fan);
+      });
+	  
+	  // Modalità attiva (DP 25)
+      document.querySelectorAll('#btn-group .btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === d.mode);
       });
 
       // Acqua attiva (DP 60)
