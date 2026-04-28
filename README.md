@@ -110,7 +110,7 @@ device_ip="10.10.x.x"
 
 The `devId` and `localKey` are device-specific keys needed to communicate locally with your robot. They are not available through the official Proscenic app or Tuya developer portal (Proscenic uses a separate OEM cloud).
 
-The only way to retrieve them is by extracting them from the app at runtime using **Frida** on a rooted Android emulator.
+One way to retrieve them is by extracting them from the app at runtime using **Frida** on a rooted Android emulator, unless we disconnect the robot from the Proscenic app and re-pair it via Smart Life (Tuya), which I chose not to do..
 
 📄 The full extraction guide is covered in the [companion Medium article](https://medium.com/@gianluca.palma).
 
