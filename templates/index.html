@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>localScenic 850T</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #4af0c4;
+    --accent2: #2dd4a0;
+    --text: #e8edf5;
+    --muted: #6b7896;
+    --danger: #f05a5a;
+    --warn: #f0a94a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; padding: 1.5rem; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;}
+
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+  .logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; transition: background 0.3s; }
+  .status-dot.online { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .status-dot.error { background: var(--danger); }
+
+  .conn-wrap { position: relative; cursor: default; }
+  .conn-wrap .device-balloon {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 100;
+    min-width: 220px;
+  }
+  .conn-wrap:hover .device-balloon { display: block; }
+  .device-balloon .db-row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 0.5px solid var(--border); }
+  .device-balloon .db-row:last-child { border-bottom: none; }
+  .device-balloon .db-key { color: var(--muted); }
+  .device-balloon .db-val { color: var(--text); text-align: right; }
+
+  .fault-banner { display: none; background: rgba(240,90,90,0.12); border: 1px solid rgba(240,90,90,0.5); border-radius: 8px; padding: 10px 16px; margin-bottom: 1rem; font-family: var(--mono); font-size: 0.75rem; color: var(--danger); max-width: 800px; margin-left: auto; margin-right: auto; animation: pulse-border 2s infinite; }
+  .fault-banner.visible { display: flex; align-items: center; gap: 10px; }
+  @keyframes pulse-border { 0%,100% { border-color: rgba(240,90,90,0.4); } 50% { border-color: rgba(240,90,90,0.9); } }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 800px; margin: 0 auto; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  .full { grid-column: 1 / -1; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .card-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .stat { background: var(--surface2); border-radius: 8px; padding: 0.75rem; }
+  .stat-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; font-family: var(--mono); }
+  .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-unit { font-size: 0.7rem; color: var(--muted); margin-left: 2px; }
+  .stat-text { margin-top: 4px; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: var(--mono); background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .status-badge.active { background: rgba(74,240,196,0.1); color: var(--accent); border-color: rgba(74,240,196,0.3); }
+  .status-badge.charging { background: rgba(240,169,74,0.1); color: var(--warn); border-color: rgba(240,169,74,0.3); }
+
+  .charge-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: var(--mono); background: rgba(74,240,196,0.1); color: var(--accent); border: 1px solid var(--border); }
+
+
+  .fault-inline { font-family: var(--mono); font-size: 0.75rem; color: var(--danger); background: rgba(240,90,90,0.08); border: 1px solid rgba(240,90,90,0.2); border-radius: 6px; padding: 8px 12px; margin-top: 8px; display: none; }
+
+  .dpad { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 6px; width: 180px; height: 180px; margin: 0 auto; }
+  .dpad-btn { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--text); user-select: none; -webkit-user-select: none; transition: background 0.1s, border-color 0.1s, transform 0.1s; touch-action: none; }
+  .dpad-btn:active, .dpad-btn.pressed { background: rgba(74,240,196,0.15); border-color: var(--accent); transform: scale(0.93); }
+  .dpad-center { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: var(--accent); letter-spacing: 0.05em; font-family: var(--mono); cursor: pointer; transition: background 0.1s, color 0.1s, border-color 0.1s; }
+  .dpad-center.stop-mode { color: var(--danger); border-color: rgba(240,90,90,0.4); }
+  .dpad-center:active { transform: scale(0.93); }
+  .dpad-empty { background: transparent; border: none; pointer-events: none; }
+
+  .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--sans); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.15s; letter-spacing: 0.02em; }
+  .btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); }
+  .btn.active { background: rgba(74,240,196,0.12); border-color: rgba(74,240,196,0.4); color: var(--accent); }
+  .btn.danger { border-color: rgba(240,90,90,0.3); }
+  .btn.danger:hover { background: rgba(240,90,90,0.1); border-color: var(--danger); color: var(--danger); }
+  .btn.warn-btn { border-color: rgba(240,169,74,0.3); }
+  .btn.warn-btn:hover { background: rgba(240,169,74,0.1); color: var(--warn); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .tooltip-wrap { position: relative; display: inline-block; }
+  .tooltip-wrap .tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid rgba(240,169,74,0.4); color: var(--warn); font-family: var(--mono); font-size: 0.65rem; padding: 5px 10px; border-radius: 6px; white-space: nowrap; z-index: 10; pointer-events: none; }
+  .tooltip-wrap.show-tooltip:hover .tooltip { display: block; }
+
+  .water-row { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .water-row.visible { display: block; }
+  .section-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 6px; }
+
+  .accessory { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 0.75rem; }
+  .accessory:last-child { margin-bottom: 0; }
+  .acc-label { color: var(--muted); min-width: 90px; font-family: var(--mono); font-size: 0.7rem; }
+  .acc-bar { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .acc-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.5s; }
+  .acc-fill.warn { background: var(--warn); }
+  .acc-fill.danger { background: var(--danger); }
+  .acc-val { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); min-width: 40px; text-align: right; }
+  .acc-reset { font-size: 0.65rem; padding: 3px 8px; }
+
+  .toggle-row { display: flex; align-items: center; gap: 10px; }
+  .toggle-label { font-size: 0.8rem; color: var(--text); }
+  .toggle { width: 36px; height: 20px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--accent2); border-color: var(--accent); }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: left 0.2s, background 0.2s; }
+  .toggle.on::after { left: 18px; background: white; }
+
+  .refresh-info { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); text-align: center; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="location.reload();" role="button" tabindex="0" Style="cursor: pointer" title="Aggiorna"><img src="data:image/png;base64,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" style="filter: drop-shadow(0 0 8px #4af0c4); margin-right: 5px; vertical-align: middle; width: 10%;">localScenic <span>850T</span></div>
+  <div class="conn-wrap">
+    <span style="font-size:0.75rem; color: var(--muted); font-family: var(--mono);">
+      <span class="status-dot" id="dot"></span>
+      <span id="conn-status">connection...</span>
+    </span>
+    <div class="device-balloon">
+      <div class="db-row"><span class="db-key">IP Address</span><span class="db-val" id="bal-ip">--</span></div>
+      <div class="db-row"><span class="db-key">Product ID</span><span class="db-val" id="bal-pk">--</span></div>
+      <div class="db-row"><span class="db-key">Device ID</span><span class="db-val" id="bal-did">--</span></div>
+      <div class="db-row"><span class="db-key">Serial</span><span class="db-val" id="bal-sn">--</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="fault-banner" id="fault-banner">
+  <span>&#9888;</span>
+  <span id="fault-banner-text"></span>
+</div>
+
+<div class="grid">
+
+  <!-- STATO -->
+  <div class="card">
+    <div class="card-title">Device Status</div>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">Battery</div>
+        <div class="stat-value" id="battery">--<span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Status</div>
+        <div style="margin-top:4px;"><span class="status-badge" id="status-badge">--</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Cleaned area</div>
+        <div class="stat-value" id="area">--<span class="stat-unit">m²</span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time">--<span class="stat-unit">min</span></div>
+      </div>
+      <div class="stat" style="grid-column: 1/-1;">
+        <div class="stat-label">Container</div>
+        <div style="margin-top:4px;"><span class="status-badge" id="sweep-badge">--</span></div>
+      </div>
+      <span id="serial" style="display:none"></span>
+      <span id="device-ip" style="display:none"></span>
+      <span id="product-key" style="display:none"></span>
+      <span id="device-id" style="display:none"></span>
+    </div>
+    <div class="fault-inline" id="fault-inline"></div>
+  </div>
+
+  <!-- TELECOMANDO -->
+  <div class="card">
+    <div class="card-title">Remote</div>
+    <div class="dpad">
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-forward" data-dir="forward">&#8679;</div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-turnleft" data-dir="turnleft">&#8678;</div>
+      <div class="dpad-center" id="btn-startstop">START</div>
+      <div class="dpad-btn" id="btn-turnright" data-dir="turnright">&#8680;</div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-backward" data-dir="backward">&#8681;</div>
+      <div class="dpad-empty"></div>
+    </div>
+  </div>
+
+  <!-- MODALITÀ PULIZIA -->
+  <div class="card">
+    <div class="card-title">Cleaning mode</div>
+    <div class="btn-group">
+      <button class="btn" onclick="setMode('smart')">Auto</button>
+      <button class="btn" onclick="setMode('wallfollow')">Edge</button>
+      <button class="btn" onclick="setMode('sprial')">Spot</button>
+      <div class="tooltip-wrap show-tooltip" id="mop-tooltip-wrap">
+        <button class="btn" id="btn-mop" onclick="setMode('mop')" disabled>Mop</button>
+        <span class="tooltip">&#9888; Insert the water tank</span>
+      </div>
+      <button class="btn warn-btn" onclick="setMode('chargego')">🔋 Back to Dock</button>
+      <button class="btn danger" onclick="pause()">&#9646;&#9646; Pause</button>
+    </div>
+    <div class="water-row" id="water-row">
+      <div class="section-label">Water flow</div>
+      <div class="btn-group" id="water-group">
+        <button class="btn" data-water="small" onclick="setWater('small')">Small</button>
+        <button class="btn" data-water="medium" onclick="setWater('medium')">Medium</button>
+        <button class="btn" data-water="Big" onclick="setWater('Big')">Big</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POTENZA ASPIRAZIONE -->
+  <div class="card">
+    <div class="card-title">Vacuum power</div>
+    <div class="btn-group" id="fan-group">
+      <button class="btn" data-fan="ECO" onclick="setFan('ECO')">ECO</button>
+      <button class="btn" data-fan="normal" onclick="setFan('normal')">Normal</button>
+      <button class="btn" data-fan="strong" onclick="setFan('strong')">Strong</button>
+    </div>
+  </div>
+
+  <!-- DURATA ACCESSORI -->
+  <div class="card full">
+    <div class="card-title">Accessories life</div>
+    <div class="accessory">
+      <span class="acc-label">Filter</span>
+      <div class="acc-bar"><div class="acc-fill" id="bar-filter" style="width:0%"></div></div>
+      <span class="acc-val" id="val-filter">--h</span>
+      <button class="btn acc-reset" onclick="resetPart('filter')">Reset</button>
+    </div>
+    <div class="accessory">
+      <span class="acc-label">Side Brushes</span>
+      <div class="acc-bar"><div class="acc-fill" id="bar-edge" style="width:0%"></div></div>
+      <span class="acc-val" id="val-edge">--h</span>
+      <button class="btn acc-reset" onclick="resetPart('edge_brush')">Reset</button>
+    </div>
+    <div class="accessory">
+      <span class="acc-label">Main Brush</span>
+      <div class="acc-bar"><div class="acc-fill" id="bar-main" style="width:0%"></div></div>
+      <span class="acc-val" id="val-main">--h</span>
+      <button class="btn acc-reset" onclick="resetPart('main_brush')">Reset</button>
+    </div>
+    <div class="accessory">
+      <span class="acc-label">Sensors</span>
+      <div class="acc-bar"><div class="acc-fill" id="bar-sensor" style="width:0%"></div></div>
+      <span class="acc-val" id="val-sensor">--h</span>
+      <button class="btn acc-reset" onclick="resetPart('sensor')">Reset</button>
+    </div>
+  </div>
+
+  <!-- VARIE -->
+  <div class="card full">
+    <div class="card-title">Device controls</div>
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center;">
+      <div class="toggle-row">
+        <span class="toggle-label">Indicator lights</span>
+        <div class="toggle" id="toggle-lights" onclick="toggleLights()"></div>
+      </div>
+      <button class="btn" onclick="beep()">&#128276; Find robot</button>
+	  <button class="btn" style="background: #b34b47;" onclick="reboot()">⭯ Reboot</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="refresh-info">Status update: 5s</div>
+
+<script>
+
+const STATUS_MAP = {
+  "0": "standby",
+  "1": "cleaning",
+  "2": "mopping",
+  "3": "edge",
+  "4": "docking",
+  "5": "charging",
+  "6": "spot",
+  "7": "paused",
+  "8": "depth",
+  "9": "remote"
+};
+
+const FAULT_MAP = {
+  0: "Side brush jammed",
+  1: "Roller brush jammed",
+  2: "Left wheel jammed",
+  3: "Right wheel jammed",
+  4: "Container not installed",
+  5: "Cliff sensor error",
+  6: "Bumper jammed",
+  7: "Compass error",
+  8: "Robot stuck",
+  9: "Fan error",
+  10: "Low battery",
+  11: "Spot cleaning failed",
+  12: "Reserved"
+};
+
+// DP 11 = 16 = bit 4 = serbatoio non installato
+// DP 11 = 32 = bit 5 = sensore pavimento
+
+let lightsOn = false;
+let activeDir = null;
+
+// --- Dpad mouse/touch ---
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  const startMove = (e) => {
+    e.preventDefault();
+    btn.classList.add('pressed');
+    activeDir = dir;
+    fetch(`/move/${dir}`);
+  };
+  const stopMove = (e) => {
+    e.preventDefault();
+    if (activeDir === dir) {
+      btn.classList.remove('pressed');
+      activeDir = null;
+      fetch('/move/stop');
+    }
+  };
+  btn.addEventListener('mousedown', startMove);
+  btn.addEventListener('mouseup', stopMove);
+  btn.addEventListener('mouseleave', stopMove);
+  btn.addEventListener('touchstart', startMove, { passive: false });
+  btn.addEventListener('touchend', stopMove, { passive: false });
+});
+
+// --- Bottone START/STOP centrale ---
+document.getElementById('btn-startstop').addEventListener('click', () => {
+  const badge = document.getElementById('status-badge').textContent;
+  const active = ['cleaning','mopping','edge','spot','depth'];
+  if (active.includes(badge)) {
+    fetch('/pause');
+  } else {
+    fetch('/mode/smart');
+  }
+});
+
+// --- Tastiera ---
+const KEY_MAP = { 'ArrowUp':'forward', 'ArrowDown':'backward', 'ArrowLeft':'turnleft', 'ArrowRight':'turnright' };
+const BTN_ID  = { 'forward':'btn-forward', 'backward':'btn-backward', 'turnleft':'btn-turnleft', 'turnright':'btn-turnright' };
+
+document.addEventListener('keydown', (e) => {
+  const dir = KEY_MAP[e.key];
+  if (!dir || activeDir === dir) return;
+  e.preventDefault();
+  if (activeDir) document.getElementById(BTN_ID[activeDir])?.classList.remove('pressed');
+  activeDir = dir;
+  document.getElementById(BTN_ID[dir])?.classList.add('pressed');
+  fetch(`/move/${dir}`);
+});
+document.addEventListener('keyup', (e) => {
+  const dir = KEY_MAP[e.key];
+  if (!dir || activeDir !== dir) return;
+  e.preventDefault();
+  activeDir = null;
+  document.getElementById(BTN_ID[dir])?.classList.remove('pressed');
+  fetch('/move/stop');
+});
+
+// --- Comandi ---
+function setMode(mode) { fetch(`/mode/${mode}`); }
+function pause() { fetch('/pause'); }
+
+function setFan(level) {
+  fetch(`/fan/${level}`);
+  document.querySelectorAll('#fan-group .btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#fan-group .btn[data-fan="${level}"]`)?.classList.add('active');
+}
+
+function setWater(level) {
+  fetch(`/water/${level}`);
+  document.querySelectorAll('#water-group .btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#water-group .btn[data-water="${level}"]`)?.classList.add('active');
+}
+
+function toggleLights() {
+  lightsOn = !lightsOn;
+  document.getElementById('toggle-lights').classList.toggle('on', lightsOn);
+  fetch(`/lights/${lightsOn ? 'on' : 'off'}`);
+}
+
+function beep() { fetch('/beep'); }
+
+function reboot() {
+  if (confirm("Restart the device?")) fetch('/reboot');
+}
+function resetPart(part) {
+  if (confirm(`Reset ${part}?`)) fetch(`/reset/${part}`);
+}
+
+// --- Barre accessori ---
+function setBar(id, val, max) {
+  const pct = Math.min(100, Math.round((val / max) * 100));
+  const fill = document.getElementById(id);
+  if (!fill) return;
+  fill.style.width = pct + '%';
+  fill.className = 'acc-fill' + (pct > 80 ? ' danger' : pct > 60 ? ' warn' : '');
+}
+
+// --- Aggiornamento stato ---
+function updateStatus() {
+  fetch('/status')
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { setOffline(); return; }
+
+      document.getElementById('dot').className = 'status-dot online';
+      document.getElementById('conn-status').textContent = 'online';
+
+      // Batteria
+      const bat = d.battery;
+      const batEl = document.getElementById('battery');
+      batEl.innerHTML = `${bat}<span class="stat-unit">%</span>`;
+      batEl.className = 'stat-value' + (bat < 20 ? ' danger' : bat < 40 ? ' warn' : '');
+      // Area e tempo
+      document.getElementById('area').innerHTML = `${d.area}<span class="stat-unit">m²</span>`;
+      document.getElementById('time').innerHTML = `${d.time}<span class="stat-unit">min</span>`;
+
+      // Info dispositivo — balloon header + card stato
+      const ip = d.ip || '--';
+      const pk = d.product_key || '--';
+      const did = d.device_id || '--';
+      const sn = d.serial || '--';
+      document.getElementById('bal-ip').textContent = ip;
+      document.getElementById('bal-pk').textContent = pk;
+      document.getElementById('bal-did').textContent = did;
+      document.getElementById('bal-sn').textContent = sn;
+      document.getElementById('serial').textContent = sn;
+      document.getElementById('device-ip').textContent = ip;
+      document.getElementById('product-key').textContent = pk;
+      document.getElementById('device-id').textContent = did;
+
+      // Stato (DP 38)
+      const statusText = STATUS_MAP[d.status] || d.status;
+      const badge = document.getElementById('status-badge');
+      badge.textContent = statusText;
+      badge.className = 'status-badge';
+      if (['cleaning','mopping','edge','spot','remote'].includes(statusText)) badge.classList.add('active');
+      else if (['docking','charging'].includes(statusText)) badge.classList.add('charging');
+
+      if (statusText === 'charging' && bat === 100) {
+	  document.getElementById('status-badge').textContent = "charged";
+	  }
+
+		
+	  
+      // Bottone START/STOP
+      const ssBtn = document.getElementById('btn-startstop');
+      const isActive = ['cleaning','mopping','edge','spot','depth'].includes(statusText);
+      ssBtn.textContent = isActive ? 'STOP' : 'START';
+      ssBtn.classList.toggle('stop-mode', isActive);
+
+      // Fault (DP 11)
+      const fault = d.fault || 0;
+      const banner = document.getElementById('fault-banner');
+      const inline = document.getElementById('fault-inline');
+      if (fault !== 0) {
+        let msgs = [];
+        for (let i = 0; i < 13; i++) {
+          if (fault & (1 << i)) msgs.push(FAULT_MAP[i] || `Error bit ${i}`);
+        }
+        const msg = msgs.join(' · ');
+        document.getElementById('fault-banner-text').textContent = msg;
+        banner.classList.add('visible');
+        inline.textContent = '⚠ ' + msg;
+        inline.style.display = 'block';
+      } else {
+        banner.classList.remove('visible');
+        inline.style.display = 'none';
+      }
+
+      // Serbatoio (DP 49) + bottone Lava + flusso acqua
+      const isMop = d.sweep_type === 'mop';
+      const sweepBadge = document.getElementById('sweep-badge');
+      const mopBtn = document.getElementById('btn-mop');
+      const mopWrap = document.getElementById('mop-tooltip-wrap');
+      const waterRow = document.getElementById('water-row');
+      sweepBadge.textContent = isMop ? 'Water (mop)' : 'Dust (sweep)';
+      sweepBadge.className = 'status-badge' + (isMop ? ' active' : '');
+      mopBtn.disabled = !isMop;
+      mopWrap.classList.toggle('show-tooltip', !isMop);
+      waterRow.classList.toggle('visible', isMop);
+
+      // Ventola attiva (DP 27)
+      document.querySelectorAll('#fan-group .btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.fan === d.fan);
+      });
+
+      // Acqua attiva (DP 60)
+      document.querySelectorAll('#water-group .btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.water === d.water);
+      });
+
+      // Accessori
+      setBar('bar-filter', d.filter, 150);
+      document.getElementById('val-filter').textContent = d.filter + 'h';
+      setBar('bar-edge', d.edge_brush, 200);
+      document.getElementById('val-edge').textContent = d.edge_brush + 'h';
+      setBar('bar-main', d.main_brush, 300);
+      document.getElementById('val-main').textContent = d.main_brush + 'h';
+      setBar('bar-sensor', d.sensor, 30);
+      document.getElementById('val-sensor').textContent = d.sensor + 'h';
+
+      // Luci
+      lightsOn = d.lights;
+      document.getElementById('toggle-lights').classList.toggle('on', lightsOn);
+    })
+    .catch(() => setOffline());
+}
+
+function setOffline() {
+  document.getElementById('dot').className = 'status-dot error';
+  document.getElementById('conn-status').textContent = 'error';
+}
+
+updateStatus();
+setInterval(updateStatus, 5000);
+</script>
+</body>
+</html>
